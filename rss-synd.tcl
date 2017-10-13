@@ -38,8 +38,12 @@ proc ::rss-synd::init {args} {
 	set version(number)	0.5.1
 	set version(date)	"2012-02-27"
 
+	set proxy(proxy_host)	"192.168.178.33"
+	set proxy(proxy_port)	3128
+
 	package require http
 	set packages(base64) [catch {package require base64}]; # http auth
+	set packages(autoproxy) [catch {package require autoproxy}];
 	set packages(tls) [catch {package require tls}]; # https
 	set packages(trf) [catch {package require Trf}]; # gzip compression
 
@@ -74,7 +78,29 @@ proc ::rss-synd::init {args} {
 					continue
 				}
 
-				::http::register https 443 ::tls::socket
+				if {$packages(autoproxy) != 0} {
+                                        ::http::register https 443 ::tls::socket					
+				} else {
+					if {1==1} {
+					    ::autoproxy::configure -proxy_host $proxy(proxy_host) -proxy_port $proxy(proxy_port)
+					    #::autoproxy::configure -basic -username sampleuser -password samplepassword
+					} else {
+					    ::autoproxy::init
+					}
+					if {[::autoproxy::cget -proxy_host] eq ""} {
+						# No proxy settings -> don't use autoproxy tunnel
+						if {[catch {package require twapi_crypto}]} {
+					        	package require tls
+     							http::register https 443 [list ::tls::socket -tls1 1]
+						} else {
+					        	http::register https 443 [list ::twapi::tls_socket]
+						}
+					} else {
+						# proxy host set -> use proxy tunnel
+						package require tls
+						http::register https 443 [list autoproxy::tls_socket -tls1 1]
+					}
+				}
 			}
 
 			if {(![info exists tmp(url-auth)]) || ($tmp(url-auth) == "")} {
@@ -261,7 +287,7 @@ proc ::rss-synd::feed_get {args} {
 		array set feed $rss($name)
 
 		if {$feed(updated) <= [expr { [unixtime] - ($feed(update-interval) * 60) }]} {
-			::http::config -useragent $feed(user-agent)
+			::http::config -useragent $feed(user-agent) -proxyhost $proxy(proxy_host) -proxyport $proxy(proxy_port)
 
 			set feed(type) $feed(announce-type)
 			set feed(headers) [list]
@@ -419,6 +445,7 @@ proc ::rss-synd::feed_info {data {target "feed"}} {
 proc ::rss-synd::feed_gzip {cdata} {
 	variable packages
 
+	return $cdata
 	if {(![info exists packages(trf)]) || \
 	    ($packages(trf) != 0)} {
 		error "Trf package not found."
