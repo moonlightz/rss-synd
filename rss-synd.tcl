@@ -34,6 +34,7 @@ proc ::rss-synd::init {args} {
 	variable default
 	variable version
 	variable packages
+	variable proxy
 
 	set version(number)	0.5.1
 	set version(date)	"2012-02-27"
