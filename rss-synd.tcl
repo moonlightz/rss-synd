@@ -36,8 +36,8 @@ proc ::rss-synd::init {args} {
 	variable packages
 	variable proxy
 
-	set version(number)	0.5.1
-	set version(date)	"2012-02-27"
+	set version(number)	0.5.2
+	set version(date)	"2017-10-13"
 
 	set proxy(proxy_host)	"192.168.178.33"
 	set proxy(proxy_port)	3128
