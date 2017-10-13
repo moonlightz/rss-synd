@@ -280,6 +280,7 @@ proc ::rss-synd::trigger {nick user handle args} {
 
 proc ::rss-synd::feed_get {args} {
 	variable rss
+	variable proxy
 
 	set i 0
 	foreach name [array names rss] {
